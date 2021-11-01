@@ -1,0 +1,11 @@
+_target_: src.models.pet_model.PetModel
+
+cfg:
+  model:
+    name: swin_tiny_patch4_window7_224
+    output_dim: 1
+  optimizer:
+    name: optim.AdamW
+    params:
+      lr: 1e-5
+  scheduler

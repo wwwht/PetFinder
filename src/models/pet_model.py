@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2021-10-31 16:24:15
-LastEditTime: 2021-11-01 21:45:20
+LastEditTime: 2021-11-01 22:07:52
 LastEditors: Please set LastEditors
 Description: In User Settings Edit
 FilePath: \PetFinder\src\models\pet_model.py
@@ -17,6 +17,8 @@ import torch.nn.functional as F
 from timm import create_model
 from torchmetrics.classification.accuracy import Accuracy
 from src.models.modules.simple_dense_net import SimpleDenseNet
+from pytorch_grad_cam import GradCAMPlusPlus
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 def mixup(x: torch.Tensor, y:torch.Tensor, alpha:float = 1.0):
     assert alpha > 0, "alpha should be larger than 0"
@@ -76,12 +78,12 @@ class PetModel(LightningModule):
         return loss, pred, labels
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, preds, targets = self.step(batch, 'train')
 
         # log train metrics
-        acc = self.train_accuracy(preds, targets)
-        self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        # acc = self.train_accuracy(preds, targets)
+        # self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        # self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
 
         # we can return here dict with any tensors
         # and then read it in some callback or in training_epoch_end() below
@@ -90,41 +92,63 @@ class PetModel(LightningModule):
 
     def training_epoch_end(self, outputs: List[Any]):
         # `outputs` is a list of dicts returned from `training_step()`
-        pass
+        self.__share_epoch_end(outputs, 'train')
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
-
-        # log val metrics
-        acc = self.val_accuracy(preds, targets)
-        self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-
-        return {"loss": loss, "preds": preds, "targets": targets}
+        loss, preds, labels = self.step(batch, 'val')
+        return {'preds': preds, 'labels': labels}
 
     def validation_epoch_end(self, outputs: List[Any]):
-        pass
+        self.__share_epoch_end(outputs, 'val')
 
-    def test_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+    def __share_epoch_end(self, outputs, mode):
+        preds = []
+        labels = []
+        for out in outputs:
+            pred, label = out['pred'], out['labels']
+            preds.append(pred)
+            labels.append(label)
+        preds = torch.cat(preds)
+        labels = torch.cat(labels)
+        metrics = torch.sqrt(((labels - preds) ** 2).mean())
+        self.log(f'{mode}_loss', metrics)
 
-        # log test metrics
-        acc = self.test_accuracy(preds, targets)
-        self.log("test/loss", loss, on_step=False, on_epoch=True)
-        self.log("test/acc", acc, on_step=False, on_epoch=True)
+    def check_gradcam(self, dataloader, target_layer, target_category, reshape_transform=None):
+        cam = GradCAMPlusPlus(
+            model=self,
+            target_layer=target_layer, 
+            use_cuda=self.cfg.trainer.gpus, 
+            reshape_transform=reshape_transform)
+        
+        org_images, labels = iter(dataloader).next()
+        cam.batch_size = len(org_images)
+        images = self.transform['val'](org_images)
+        images = images.to(self.device)
+        logits = self.forward(images).squeeze(1)
+        pred = logits.sigmoid().detach().cpu().numpy() * 100
+        labels = labels.cpu().numpy()
+        
+        grayscale_cam = cam(input_tensor=images, target_category=target_category, eigen_smooth=True)
+        org_images = org_images.detach().cpu().numpy().transpose(0, 2, 3, 1) / 255.
+        return org_images, grayscale_cam, pred, labels
+    
 
-        return {"loss": loss, "preds": preds, "targets": targets}
+    # def configure_optimizers(self):
+    #     """Choose what optimizers and learning-rate schedulers to use in your optimization.
+    #     Normally you'd need one. But in the case of GANs or similar you might have multiple.
 
-    def test_epoch_end(self, outputs: List[Any]):
-        pass
-
+    #     See examples here:
+    #         https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
+    #     """
+    #     return torch.optim.Adam(
+    #         params=self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay
+    #     )
     def configure_optimizers(self):
-        """Choose what optimizers and learning-rate schedulers to use in your optimization.
-        Normally you'd need one. But in the case of GANs or similar you might have multiple.
-
-        See examples here:
-            https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
-        """
-        return torch.optim.Adam(
-            params=self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay
+        optimizer = eval(self.cfg.optimizer.name)(
+            self.parameters(), **self.cfg.optimizer.params
         )
+        scheduler = eval(self.cfg.scheduler.name)(
+            optimizer,
+            **self.cfg.scheduler.params
+        )
+        return [optimizer], [scheduler]
