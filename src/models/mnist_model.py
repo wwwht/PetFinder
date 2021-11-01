@@ -24,6 +24,7 @@ class MNISTLitModel(LightningModule):
 
     def __init__(
         self,
+        cfg,
         input_size: int = 784,
         lin1_size: int = 256,
         lin2_size: int = 256,
@@ -33,7 +34,7 @@ class MNISTLitModel(LightningModule):
         weight_decay: float = 0.0005,
     ):
         super().__init__()
-
+        self.cfg = cfg
         # this line ensures params passed to LightningModule will be saved to ckpt
         # it also allows to access params with 'self.hparams' attribute
         self.save_hyperparameters()
@@ -74,6 +75,7 @@ class MNISTLitModel(LightningModule):
 
     def training_epoch_end(self, outputs: List[Any]):
         # `outputs` is a list of dicts returned from `training_step()`
+        # print(self.cfg.cfg_name)
         pass
 
     def validation_step(self, batch: Any, batch_idx: int):
