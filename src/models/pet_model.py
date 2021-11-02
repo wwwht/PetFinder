@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2021-10-31 16:24:15
-LastEditTime: 2021-11-01 22:07:52
+LastEditTime: 2021-11-02 21:20:00
 LastEditors: Please set LastEditors
 Description: In User Settings Edit
 FilePath: \PetFinder\src\models\pet_model.py
@@ -62,7 +62,7 @@ class PetModel(LightningModule):
     def step(self, batch: Any, mode: str):
         images, labels = batch
         labels = labels.float() / 100.0
-        images = self.transform[mode](images)
+        # images = self.transform[mode](images)
         
         if torch.rand(1)[0] < 0.5 and mode == 'train':
             mix_images, target_a, target_b, lam = mixup(images, labels, alpha=0.5)
@@ -78,7 +78,7 @@ class PetModel(LightningModule):
         return loss, pred, labels
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch, 'train')
+        loss, pred, targets = self.step(batch, 'train')
 
         # log train metrics
         # acc = self.train_accuracy(preds, targets)
@@ -88,15 +88,15 @@ class PetModel(LightningModule):
         # we can return here dict with any tensors
         # and then read it in some callback or in training_epoch_end() below
         # remember to always return loss from training_step, or else backpropagation will fail!
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss, "pred": pred, "targets": targets}
 
     def training_epoch_end(self, outputs: List[Any]):
         # `outputs` is a list of dicts returned from `training_step()`
         self.__share_epoch_end(outputs, 'train')
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, labels = self.step(batch, 'val')
-        return {'preds': preds, 'labels': labels}
+        loss, pred, labels = self.step(batch, 'val')
+        return {'pred': pred, 'labels': labels}
 
     def validation_epoch_end(self, outputs: List[Any]):
         self.__share_epoch_end(outputs, 'val')

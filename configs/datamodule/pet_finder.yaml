@@ -1,4 +1,4 @@
-_target_: src.datamodules.mnist_datamodule.MNISTDataModule
+_target_: src.datamodules.petFinderModule.PetFinderDataModule
 
 root_path: ${data_dir}
 batch_size: 64

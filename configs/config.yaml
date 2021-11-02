@@ -4,10 +4,12 @@
 defaults:
   - _self_
   - trainer: default.yaml
-  - model: mnist_model.yaml
-  - datamodule: mnist_datamodule.yaml
+  # - model: mnist_model.yaml
+  # - datamodule: mnist_datamodule.yaml
+  - model: pet_model.yaml
+  - datamodule: pet_finder.yaml
   - callbacks: default.yaml
-  - logger: null # set logger here or use command line (e.g. `python run.py logger=wandb`)
+  - logger: wandb # set logger here or use command line (e.g. `python run.py logger=wandb`)
 
   - mode: default.yaml
 
@@ -25,7 +27,8 @@ defaults:
 work_dir: ${hydra:runtime.cwd}
 
 # path to folder with data
-data_dir: ${work_dir}/data/
+# data_dir: ${work_dir}/data/
+data_dir: A:\\Kaggle\\PetFinder
 
 # pretty print config at the start of the run using Rich library
 print_config: True

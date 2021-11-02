@@ -8,4 +8,9 @@ cfg:
     name: optim.AdamW
     params:
       lr: 1e-5
-  scheduler
+  scheduler:
+    name: optim.lr_scheduler.CosineAnnealingWarmRestarts
+    params:
+      T_0: 20
+      eta_min: 1e-4
+  loss: nn.BCEWithLogitsLoss
