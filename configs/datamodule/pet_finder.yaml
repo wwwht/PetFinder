@@ -3,5 +3,5 @@ _target_: src.datamodules.petFinderModule.PetFinderDataModule
 root_path: ${data_dir}
 batch_size: 64
 num_workers: 0
-pin_memory: False
+pin_memory: True
 image_size: 224

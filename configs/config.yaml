@@ -8,7 +8,8 @@ defaults:
   # - datamodule: mnist_datamodule.yaml
   - model: pet_model.yaml
   - datamodule: pet_finder.yaml
-  - callbacks: default.yaml
+  # - callbacks: default.yaml
+  - callbacks: wandb.yaml
   - logger: wandb # set logger here or use command line (e.g. `python run.py logger=wandb`)
 
   - mode: default.yaml
@@ -44,4 +45,4 @@ test_after_training: True
 seed: null
 
 # name of the run, accessed by loggers
-name: null
+name: test1

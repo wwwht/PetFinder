@@ -1,6 +1,7 @@
 _target_: src.models.pet_model.PetModel
 
 cfg:
+  image_size: 224
   model:
     name: swin_tiny_patch4_window7_224
     output_dim: 1

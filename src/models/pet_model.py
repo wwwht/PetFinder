@@ -1,11 +1,13 @@
 '''
 Author: your name
 Date: 2021-10-31 16:24:15
-LastEditTime: 2021-11-02 21:20:00
+LastEditTime: 2021-11-03 21:45:12
 LastEditors: Please set LastEditors
 Description: In User Settings Edit
 FilePath: \PetFinder\src\models\pet_model.py
 '''
+import sys
+# sys.path.append("..")
 from typing import Any, List  
 import torch 
 from pytorch_lightning import LightningModule
@@ -19,6 +21,7 @@ from torchmetrics.classification.accuracy import Accuracy
 from src.models.modules.simple_dense_net import SimpleDenseNet
 from pytorch_grad_cam import GradCAMPlusPlus
 from pytorch_grad_cam.utils.image import show_cam_on_image
+# from datamodules.transformer.default_tranform import default_transforms
 
 def mixup(x: torch.Tensor, y:torch.Tensor, alpha:float = 1.0):
     assert alpha > 0, "alpha should be larger than 0"
@@ -43,6 +46,7 @@ class PetModel(LightningModule):
         self.__build_model()
         self._criterion = eval(self.cfg.loss)()
         self.save_hyperparameters()
+        # self.transform = default_transforms(cfg.image_size)
 
     def __build_model(self):
         self.backbone = create_model(
